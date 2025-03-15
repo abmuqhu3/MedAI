@@ -17,18 +17,20 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), '../../.env')
 load_dotenv(dotenv_path)
 
-# 🔹 Securely access API keys from .env
-GOOGLE_APPLICATION_CREDENTIALS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-GOOGLE_CUSTOM_SEARCH_API_KEY = os.getenv("GOOGLE_CUSTOM_SEARCH_API_KEY")
-SEARCH_ENGINE_ID = os.getenv("SEARCH_ENGINE_ID")
+# 🔹 Load Google Credentials from environment variable (Render)
+GOOGLE_CREDENTIALS_JSON = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
 
-# 🔹 Check if Google Credentials File Exists
-if not GOOGLE_APPLICATION_CREDENTIALS or not os.path.exists(GOOGLE_APPLICATION_CREDENTIALS):
-    raise FileNotFoundError(f"❌ ERROR: Google Credentials file not found: {GOOGLE_APPLICATION_CREDENTIALS}")
+if GOOGLE_CREDENTIALS_JSON:
+    credentials_path = "/tmp/google-credentials.json"
+    with open(credentials_path, "w") as f:
+        f.write(GOOGLE_CREDENTIALS_JSON)  # Save the JSON string as a temp file
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
+else:
+    raise FileNotFoundError("❌ ERROR: Google Credentials JSON not found in environment variables.")
 
-# 🔹 Explicitly load Google Vision credentials
-credentials = service_account.Credentials.from_service_account_file(GOOGLE_APPLICATION_CREDENTIALS)
+credentials = service_account.Credentials.from_service_account_file(credentials_path)
 vision_client = vision.ImageAnnotatorClient(credentials=credentials)
+
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})  # Enable CORS for React frontend
@@ -184,4 +186,6 @@ def get_medicine_image():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Render provides $PORT
+    app.run(host="0.0.0.0", port=port, debug=True)
+
