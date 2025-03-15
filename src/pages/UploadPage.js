@@ -46,10 +46,11 @@ function UploadPage() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://127.0.0.1:5000/extract_text", {
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/extract_text`, { 
         method: "POST",
-        body: formData,
-      });
+        body: formData
+    })
+    
 
       const data = await response.json();
       console.log("API Response:", data);
